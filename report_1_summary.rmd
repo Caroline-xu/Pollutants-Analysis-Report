@@ -1,0 +1,15 @@
+## Summary
+
+This STAT 331 Final project mainly analyzes how the pollutants, cells, smoking conditions, and general peronal info affect the telomere length.
+In our project, we set up a number of questions in the objectives which could help us analyze the relationship between pollutant and the person health.
+Our report is based on an analysis of the `pollutant.csv` dataset.
+The covariates were divided into four groups and we analyze how each group was related to the outcome, telomere length.
+We removed explanatory variables with large VIF one by one, until there are no more with "high" multicollinearity.
+We evaluated the prediction accuracies of the models with k-fold cross validation and then selected model which have smallest error.
+Then we used different criteria to evaluate the goodness of fit of our final model.
+After the model selection process, we also checked if the four assumptions of a linear model,
+namely linearity, independence, normality, and homoskedasticity,
+were all met.
+In conclusion, according to the results from various models,
+we found out that all the correlation coefficient between length and different pollutants are negative,
+and the telomere length does not have strong relationship with any type of cells.
