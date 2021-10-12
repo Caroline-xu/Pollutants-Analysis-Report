@@ -1,0 +1,212 @@
+## Exploratory Data Analysis
+
+\(\ \)
+
+```{r}
+n <- 864
+df <- read.csv(file="pollutants.csv")
+# the X variables is the same as the index so we can delete it
+df = df[,-1]
+# since the five kinds of cells other than white blood cells
+# are all recorded in percentage, out of white blood cells,
+# we first multiply all five by the count of white blood cells
+# to get the count of each.
+df[21] = df[20] * df[21] / 100
+df[22] = df[20] * df[22] / 100
+df[23] = df[20] * df[23] / 100
+df[24] = df[20] * df[24] / 100
+df[25] = df[20] * df[25] / 100
+# names(df)[which(names(df)=="lymphocyte_pct")]  = "lymphocyte_count"
+# names(df)[which(names(df)=="monocyte_pct")]    = "monocyte_count"
+# names(df)[which(names(df)=="eosinophils_pct")] = "eosinophils_count"
+# names(df)[which(names(df)=="basophils_pct")]   = "basophils_count"
+# names(df)[which(names(df)=="neutrophils_pct")] = "neutrophils_count"
+# categorical variates should be treated as factor.
+df[,"edu_cat"]  = factor(df[,"edu_cat"])#,levels=c("< High School","High School","College","College Graduate"))
+df[,"race_cat"] = factor(df[,"race_cat"])
+df[,"male"]     = factor(df[,"male"])
+df[,"smokenow"] = factor(df[,"smokenow"])
+```
+
+The recorded explanatory covariates can be divided into 4 groups:
+
+* the first group contains all 18 kinds of pollutants,
+* the second group contains all 6 kinds of cells,
+* the third group contains all covariates related to "smoking",
+* and the last group contains all others remaining.
+
+```{r}
+# sub-dataframes.
+# sub-dataframes include length and all the pollutants elements
+pollutants <- df[,c(1, 2:19)]
+# sub-dataframes include length and all the cell elements
+cells      <- df[,c(1,20:25)]
+# sub-dataframes include length, smoke years, smoke now ,and cotinine
+smoke      <- df[,c(1,31:33)]
+# ub-dataframes include length, age, gender, education level, race level and BMI
+others     <- df[,c(1,26:30)]
+if (!(length(pollutants) == 1 + 18)) message("ERROR")
+if (!(length(cells)      == 1 + 6))  message("ERROR")
+if (!(length(smoke)      == 1 + 3))  message("ERROR")
+if (!(length(others)     == 1 + 5))  message("ERROR")
+```
+
+### Report Summary Statistics:
+
+```{r Report Summary Statistics}
+y.smr = summary(df$length)
+```
+
+We found that the mean of the telomere length variable is `r y.smr["Mean"]`
+and the range of telomere length variable is `r y.smr["Max."]-y.smr["Min."]`.
+The mean and range of the concentrations of the pollutants are summarized below:
+
+```{r}
+# get the mean of all the variables in pollutants
+p.mean.vec = round(apply(pollutants, 2, FUN = mean)[-1], 4)
+# get the range of all the variables in pollutants
+p.range.vec = round(apply(pollutants, 2, FUN = function(col) range(col)[2]-range(col)[1])[-1], 4)
+p.table = rbind(p.mean.vec, p.range.vec)
+rownames(p.table) = c("mean", "range")
+p.table
+```
+
+The PCB with largest mean is `r colnames(p.table)[c(1:11)][which.max(p.table["mean",c(1:11)])]`.
+The PCB with largest range is `r colnames(p.table)[c(1:11)][which.max(p.table["range",c(1:11)])]`.
+The dioxin with largest mean is `r colnames(p.table)[c(12:14)][which.max(p.table["mean",c(12:14)])]`.
+The dioxin with largest range is `r colnames(p.table)[c(12:14)][which.max(p.table["range",c(12:14)])]`.
+The furan with largest mean is `r colnames(p.table)[c(15:18)][which.max(p.table["mean",c(15:18)])]`.
+The furan with largest range is `r colnames(p.table)[c(15:18)][which.max(p.table["range",c(15:18)])]`.
+
+The mean of the cells counts are summarized below:
+
+```{r}
+# get the mean of all the variables in cells
+c.mean.vec = round(apply(cells, 2, FUN = mean)[-1], 4)
+# get the range of all the variables in cells
+names(c.mean.vec) = sapply(names(df)[20:25], FUN = function(str) substr(str, 1, nchar(str)-nchar("_count")))
+c.mean.vec
+```
+
+The type of cell with the largest mean is `r names(c.mean.vec)[which.max(c.mean.vec)]`.
+The type of cell with the smallest mean is `r names(c.mean.vec)[which.min(c.mean.vec)]`.
+
+```{r}
+num_nosmoke <- which(smoke$yrssmoke == min(smoke$yrssmoke))
+num_largesmoke <- which(smoke$yrssmoke == max(smoke$yrssmoke))
+```
+For the smoke subdataframe, the lowest year smoked cigarettes is 0 year and we find that there are `r sum(smoke$yrssmoke==0)` people never smoked.
+Dividing by the sample size, we found that there are approximately `r round(sum(smoke$yrssmoke==0)/nrow(smoke)*100)`% people who do not smoke.
+The longest years smoked is `r max(smoke$yrssmoke)`.
+There was only one person who smoked for this many years.
+From the variable "smokenow", we found that
+there are `r sum(smoke$smokenow==0)` poeple who do not currently smoke
+and there are `r sum(smoke$smokenow==1)` people who currently smoke.
+This means that there are currently more than three times as many non-smokers as there are smokers.
+
+```{r}
+round(c("BMI mean" = mean(others$BMI), "BMI range" = range(others$BMI)[2] - range(others$BMI)[1],
+  "edu_cat 1" = sum(others$edu_cat==1), "edu_cat 2" = sum(others$edu_cat==2),
+  "edu_cat 3" = sum(others$edu_cat==3), "edu_cat 4" = sum(others$edu_cat==4),
+  "race_cat 1" = sum(others$race_cat==1), "race_cat 2" = sum(others$race_cat==2),
+  "race_cat 3" = sum(others$race_cat==3), "race_cat 4" = sum(others$race_cat==4),
+  "female" = sum(others$male==0), "male" = sum(others$male==1), "ageyrs mean" = mean(others$ageyrs),
+  "ageyrs range" = range(others$ageyrs)[2] - range(others$ageyrs)[1]), 4)
+```
+```{r fig.width=7,fig.height=3}
+par(mfrow = c(1, 2))
+plot(others$edu_cat, xlab = "Education", ylab = "Count", main = "Barplot of Education Level")
+plot(others$race_cat, xlab = "Race", ylab = "Count", main = "Barplot of Different Race")
+```
+
+```{r}
+df_cor = df[,-c(27,28,29,32)]
+df_cor <- cor(df_cor)
+max_cor <- max(df_cor[row(df_cor) != col(df_cor)])
+min_cor <- min(df_cor[row(df_cor) != col(df_cor)])
+cells_cor <- cor(cells)
+cmax_cor <- max(cells_cor[row(cells_cor) != col(cells_cor)])
+cmin_cor <- min(cells_cor[row(cells_cor) != col(cells_cor)])
+round(c("max cor (df)" = max_cor, "min cor (df)" = min_cor, "max cor (cells)" = cmax_cor,
+"min cor (cells)" = cmin_cor), 4)
+```
+We can see the maximum number of correlation coefficient is `r max(df_cor)` 
+which is the relarionship between POP_PCB1 and POP_PCB2.
+This means POP_PCB1 and POP_PCB2 have a strong positive relationship.
+Also, the minimum number of correlation coefficient is -0.9346368,
+which is the strong negative realtionship between eosinophils_pct and lymphocyte_pct.
+We also found that length has the smallest correlation coefficient which close to -1 with ageyrs which is -0.4454.
+The strongest relationship in the data fram cells is between eosinophils_pct and whitecell_count which is 0.92951238.
+This means that eosinophils_pct and whitecell_count has a strong positibe relationship.
+The correlation coefficient closest to 1 or -1 between length and other variables in cells dataframe is -0.04949 which is between length and monocyte_pct.
+We found that the telomere length does not have strong relationship with any type of cells.
+
+```{r}
+pollutants_cor <- cor(pollutants)
+pollutants_cor_len <- pollutants_cor[1,]
+min_pollutants <- min(pollutants_cor_len[pollutants_cor_len != 1])
+```
+
+We can also get that the strongest relationship between length and pollutant is length and POP_PCB2.
+However, the correlation coefficient closest to 1 or -1 is -0.2457 which is closer than 0.
+This means that the telomere length and POP_PCB2 does not have strong relationship
+and the telomere length does not have strong relationship with any pollutant types.
+
+
+
+```{r}
+##round(c("length and yrssmoke" = cor(smoke[,c(1:2)])[1,2], "length and ln_lbxcot" = cor(smoke[,c(1,4)])[1,2],
+##  "yrssmoke and ln_lbxcot" = cor(smoke[,c(2,4)])[1,2]), 4)
+```
+
+From the dataframe smoke and others, we can find that all of them do not have a correlation coefficient 
+which is close to 1 or -1. This means neither of them have a strong relarionship between each other.
+```{r}
+##round(c("length and BMI" = cor(others[,c(1:2)])[1,2], "length and ageyrs" = cor(others[,c(1,6)])[1,2],
+##  "BMI and ageyrs" = cor(others[,c(2,6)])[1,2]), 4)
+```
+
+
+```{r, fig.width=7}
+par(mfrow = c(1, 3))
+
+hist(df$length, breaks = seq(0, 2.5, 0.1),
+     xlab = "Telomere Length", 
+     main = "Histogram of Telomere Length")
+abline(v = mean(df$length), col = "red", lwd = 2)
+
+plot(pollutants$POP_PCB1 ~ pollutants$POP_PCB2, main = "POP_PCB1 VS. POP_PCB2", 
+     xlab = "POP_PCB2 (pg/g)", ylab = "POP_PCB1 (pg/g)")
+abline(lm(pollutants$POP_PCB1 ~ pollutants$POP_PCB2))
+
+plot(df$length ~ df$ageyrs, main = "Telomere Length VS. Age in Years", 
+     xlab = "Age in Years", ylab = "Telomere Length")
+abline(lm(df$length ~ df$ageyrs))
+```
+
+From the first histogram of the telomere length, we found that it is not really symmetric because it has a longer tail
+on the right and there is an outlier which is larger than 2.0.
+In the second plot, we can find they have a really strong positive linear relationship.
+In the third plot, we can find they have a negative linear relationship between the mean telomere length and age in year.
+
+### Interesting Findings:
+
+* The PCB/dioxin/furan with largest mean and range are the same one.
+* We found that the telomere length does not have strong relationship with any of the other variables.
+* The relationship between different types of organic pollutants was very strong.
+  We found there are strong relationships between different type of organic pollutant PCBs.
+  Also, all the correlation coefficient between length and different pollutants are negetive.
+* The telomere length and age in year has a negative linear relationship.
+  This indicates as people grow up, their telomere length tend to be shorter
+  However, they do not have a really strong linear relationship.
+
+### How these inform the rest of our analysis:
+
+We are going to use the variable which has a correlation coefficient that close to 1 or -1 to get a model. 
+Also, the variable which has an absolute correlation coefficient close to 1 will have a lower value of VIF
+when we do the model selection.
+This is because having the absolute correlation coefficient closer to 1 means that the variables have stronger linear relationship.
+Thus having lower VIF value also means the variables have stronger relationship.
+
+```{r}
+```
