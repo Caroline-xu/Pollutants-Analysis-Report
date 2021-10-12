@@ -1,0 +1,279 @@
+## Methods
+
+\(\ \)
+
+### Our Models
+
+```{r}
+library(MASS)
+library(regclass)
+```
+
+**Model 1** is the model that takes all explanatory variables into account.
+```{r M1}
+# This is the model with all the variables
+M1 <- lm(length ~ ., data = df)
+```
+
+**Model 2** is the model that has only the variates with "large" correlation with the outcome.
+The variates selected were:
+`POP_PCB1`, `POP_PCB2`, `POP_PCB3`, `POP_PCB4`, `POP_PCB5`, `POP_PCB8`, `POP_PCB9`,
+`eosinophils_pct`, and `lymphocyte_pct`.
+A brief summary of model 2 is printed below:
+```{r M2}
+# These are the variables with correlation coefficients larger than 0.9 or smaller than -0.9.
+M2 <- lm(length ~ POP_PCB1 + POP_PCB2 + POP_PCB3 + POP_PCB4 + POP_PCB5 + 
+           POP_PCB8 + POP_PCB9 + eosinophils_pct + lymphocyte_pct, data = df)
+M2
+```
+
+**Models 3 ~ 6** are models built by automatic selection from a reduced model.
+To get the reduced model, we removed the explanatory variables with large VIF's one by one,
+until there are no more with "high" multicollinearity.
+As a rule of thumb, we considered a VIF > 10 to indicate high multicollinearity.
+
+```{r stepwiseVIF def}
+# Remove variables with high VIF.
+stepwiseVIF <- function(model, threshold = 10)
+{
+    max_VIF = max(VIF(model))
+    max_VIF_var = rownames(VIF(model))[which.max(VIF(model))]
+    temp_model = model
+    while (max_VIF > threshold)
+    {
+    	update_formula = paste0(".~.-", max_VIF_var)
+    	temp_model = update(object = temp_model, formula = update_formula)
+    	max_VIF = max(VIF(temp_model))
+		max_VIF_var = rownames(VIF(temp_model))[which.max(VIF(temp_model))]
+    }
+    final_model = temp_model
+    return(final_model)
+}
+```
+```{r}
+model.full = M1
+model.reduced = stepwiseVIF(model.full)
+```
+
+The explanatory variables removed were:
+```{r}
+rownames(VIF(model.full))[!(rownames(VIF(model.full)) %in% rownames(VIF(model.reduced)))]
+```
+
+After removing these variables, we got a reduced model.
+Then we built models 3 ~ 6 out of the reduced model.
+Model 3 was built by forward selection, based on AIC.
+Model 4 was built by forward selection, based on BIC.
+Model 5 was built by backward selection, based on AIC.
+Model 6 was built by backward selection, based on BIC.
+
+```{r M3}
+# Build model 3.
+M3 = stepAIC(model.reduced, k = 2,
+             trace = FALSE, direction = "forward")
+```
+```{r M4}
+# Build model 4.
+M4 = stepAIC(model.reduced, k = log(nrow(df)),
+             trace = FALSE, direction = "forward")
+```
+```{r M5}
+# Build model 5.
+M5 = stepAIC(model.reduced, k = 2,
+             trace = FALSE, direction = "backward")
+```
+```{r M6}
+# Build model 6.
+M6 = stepAIC(model.reduced, k = log(nrow(df)),
+             trace = FALSE, direction = "backward")
+```
+
+The numbers of the predictor variables of each model are printed below:
+```{r}
+l = list(M3,M4,M5,M6)
+for (i in 3:6)
+{
+	model = l[[i-2]]
+	var_names = names(model$coef)[-1]
+	print(sprintf("Model %i has %i predictors", i, length(var_names)))
+}
+```
+
+**Model 7** was built by LASSO.
+
+Let's first have a look at the paths and the MSPEs by lambda plot:
+```{r}
+library(glmnet)
+reduced.X = model.matrix(model.reduced)[,-1]
+```
+```{r M7}
+# Build model 7.
+M7 = glmnet(x = reduced.X, y = df$length, alpha = 1) # LASSO
+plot(M7, xvar = "lambda", label = TRUE)
+M7.cv = cv.glmnet(x = reduced.X, y = df$length, alpha = 1)
+plot(M7.cv)
+```
+```{r}
+coefs = coef(M7.cv, s = "lambda.min")
+```
+The number of predictor variables in model 7 is: `r length(coefs)`.
+
+### Model Selection
+
+```{r}
+models_list = list(M1,M2,M3,M4,M5,M6,M7)
+```
+
+To select the best model from models 1 ~ 7,
+we computed the k-fold cross validation of each.
+The prediction errors are printed below:
+
+```{r Prediction Accuracy}
+# Compute Prediction Accuracy
+ntot <- nrow(df) # total number of observations
+# number of cross-validation replications
+Kfolds <- 12
+df <- df[sample(ntot),] # permute rows
+df$index <- rep(1:Kfolds,each=ntot/Kfolds)
+
+# storage space
+mspe1 <- rep(NA, Kfolds) # mspe for M1
+mspe2 <- rep(NA, Kfolds) # mspe for M2
+mspe3 <- rep(NA, Kfolds) # mspe for M3
+mspe4 <- rep(NA, Kfolds) # mspe for M4
+mspe5 <- rep(NA, Kfolds) # mspe for M5
+mspe6 <- rep(NA, Kfolds) # mspe for M6
+mspe7 <- rep(NA, Kfolds) # mspe for M7
+
+for(ii in 1:Kfolds)
+{
+	if(ii%%100 == 0) message("ii = ", ii)
+	train.ind <- which(df$index!=ii) # training observations
+
+	# using R functions
+	M1.cv <- update(M1, subset = train.ind)
+	M2.cv <- update(M2, subset = train.ind)
+	M3.cv <- update(M3, subset = train.ind)
+	M4.cv <- update(M4, subset = train.ind)
+	M5.cv <- update(M5, subset = train.ind)
+	M6.cv <- update(M6, subset = train.ind)
+	M7.cv <- cv.glmnet(x = reduced.X[train.ind,], y = df$length[train.ind], alpha = 1)
+	# cross-validation residuals
+	M1.res <- df$length[-train.ind] - predict(M1.cv, newdata = df[-train.ind,])
+	M2.res <- df$length[-train.ind] - predict(M2.cv, newdata = df[-train.ind,])
+	M3.res <- df$length[-train.ind] - predict(M3.cv, newdata = df[-train.ind,])
+	M4.res <- df$length[-train.ind] - predict(M4.cv, newdata = df[-train.ind,])
+	M5.res <- df$length[-train.ind] - predict(M5.cv, newdata = df[-train.ind,])
+	M6.res <- df$length[-train.ind] - predict(M6.cv, newdata = df[-train.ind,])
+	M7.res <- df$length[-train.ind] - predict(M7.cv, newx = reduced.X[-train.ind,], s = "lambda.min")
+	# mspe for each model
+	mspe1[ii] <- mean(M1.res^2)
+	mspe2[ii] <- mean(M2.res^2)
+	mspe3[ii] <- mean(M3.res^2)
+	mspe4[ii] <- mean(M4.res^2)
+	mspe5[ii] <- mean(M5.res^2)
+	mspe6[ii] <- mean(M6.res^2)
+	mspe7[ii] <- mean(M7.res^2)
+}
+
+mspe_1 <- mean(mspe1)
+mspe_2 <- mean(mspe2)
+mspe_3 <- mean(mspe3)
+mspe_4 <- mean(mspe4)
+mspe_5 <- mean(mspe5)
+mspe_6 <- mean(mspe6)
+mspe_7 <- mean(mspe7)
+mspe <- c("M1" = mspe_1, "M2" = mspe_2, "M3" = mspe_3, 
+          "M4" = mspe_4, "M5" = mspe_5, "M6" = mspe_6, 
+          "M7" = mspe_7 )
+```
+```{r}
+round(mspe, 4)
+```
+
+From the MSPE's we saw that model `r which.min(mspe)` had the least MSPE
+and hence was considered to be the "best" model.
+
+```{r select model}
+best_model = models_list[[which.min(mspe)]]
+```
+
+### How did we select a model?
+
+We first calculated the VIF's of each covariate and eliminated the covariates with VIF larger than 10.
+Then we used forward selection and backward selection, based on AIC and BIC, to get four fitted models.
+Then we evaluated the prediction accuracies of the four models with k-fold cross validation and seleted 
+the one with smallest error.
+
+### Parsimony and Interpretability
+
+From our calculations, we saw that the models built by forward selection were more complex
+the models built by backward selection were relatively simple.
+
+### Goodness of Fit
+
+```{r goodness of fit}
+# summarize goodness of fit.
+table = matrix(nrow = 7, ncol = 5)
+for (i in 1:6)
+{
+	model = models_list[[i]]
+	table[i,1] = summary(model)$r.squared
+	table[i,2] = summary(model)$adj.r.squared
+	table[i,3] = mean(summary(model)$residuals^2)
+	table[i,4] = AIC(model)
+	table[i,5] = BIC(model)
+}
+rownames(table) = paste0("M", 1:7)
+colnames(table) = c("R2", "Adj R2", "MSE", "AIC", "BIC")
+round(table, 4)
+```
+From the table above we observed that model 5 had relatively high \(R^{2}\), adjusted \(R^{2}\), and MSE
+and relatively low AIC and BIC values.
+This meant that model 5 fit the data well.
+
+### Are the necessary assumptions met?
+
+```{r do_plots def}
+do_plots <- function(model, X, Xname)
+{
+	resid = resid(model)
+	stdresid = resid/(sigma(model)*sqrt(1-hatvalues(model)))
+	# distribution of studentized residuals.
+	hist(stdresid, breaks=12, probability = TRUE,
+		 xlim = c(-4,4),
+     	 xlab = "Studentized Residuals",
+     	 main = "Distribution of Residuals")
+	grid <- seq(-3.5, 3.5, length.out = 1000)
+	lines(grid, dnorm(grid), col="blue")
+	qqnorm(stdresid)
+	abline(0, 1, col = "red")
+	# residuals vs fitted
+	plot(stdresid ~ fitted(model),
+	     xlab = "Fitted Values",
+	     ylab = "Studentized Residuals",
+	     main = "Residuals vs Fitted")
+	# residuals vs X.
+	for (i in length(X))
+	{
+		plot(resid ~ X[[i]],
+		 	 xlab = "Xname",
+		 	 ylab = "Residuals",
+		 	 main = paste0("Residuals vs ", Xname[i]))
+	}
+}
+```
+
+```{r, fig.width=3.5, fig.height=2.5}
+do_plots(M5, list(df$POP_furan3, df$ageyrs), c("POP_furan3", "ageyrs"))
+```
+
+* The residuals distribution plots and the normal Q-Q plots showed that the normality assumption was met.
+* From the residuals vs. fitted values plots we saw that the variance of the studentized residuals
+  were approximately the same for all levels of fitted values.
+  So the homoskedasticity assumption was met.
+* From the residuals vs. X plots we saw that the residuals were fairly "random".
+  So the linearity assumption was met.
+
+```{r}
+```
