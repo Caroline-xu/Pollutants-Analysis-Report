@@ -1,0 +1,70 @@
+---
+title: "STAT 331 Final Project Report"
+author:
+    - Daniel Mao
+    - Yufei Wang
+    - Caroline Xu
+    - Yuchen Zhang
+output:
+    pdf_document:
+        keep_tex: FALSE
+        latex_engine: xelatex
+        toc: TRUE
+        toc_depth: 2
+fontsize: 12pt
+mainfont: Times New Roman
+indent: true
+geometry: margin=1in
+header-includes:
+    - \usepackage{setspace}\singlespacing
+    - \usepackage{fancyhdr}
+    - \usepackage{lastpage}
+    - \pagestyle{fancy}
+    - \fancyhead{}
+    - \renewcommand{\headrule}{}
+    - \fancyfoot[C]{Page \textbf{\thepage} of \textbf{\pageref*{LastPage}}}
+    - \fancypagestyle{plain}{\pagestyle{fancy}}
+    - \renewcommand{\and}{\\}
+---
+
+```{r options, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      results = "hold",
+                      message = FALSE,
+                      warning = FALSE,
+                      fig.width=3,
+                      fig.height=3)
+```
+
+\newpage
+
+```{r child = 'report_1_summary.rmd'}
+```
+
+\newpage
+
+```{r child = 'report_2_objective.rmd'}
+```
+
+\newpage
+
+```{r child = 'report_3_data_analysis.rmd'}
+```
+
+\newpage
+
+```{r child = 'report_4_methods.rmd'}
+```
+
+\newpage
+
+```{r child = 'report_5_results.rmd'}
+```
+```{r child = 'report_6_discussion.rmd'}
+```
+
+\newpage
+
+## Appendix: All code for this report
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
