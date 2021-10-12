@@ -1,0 +1,54 @@
+## Results
+
+In this section of the report, we are going to state some outcomes and findings of our data analysis.
+After we checked the goodness of fit in the last part,
+we concluded that model 5 fitted the given data the best.
+So this was the ultimate model of our report.
+
+There ware 5 explanatory variables in model 5, namely
+POP_furan3: concentration of a furans,
+male1: the gender (0=female, 1=male),
+ageyrs: age in years,
+ln_lbxcot: log of cotinine in ng/mL, and 
+lymphocyte_pct: percentage of lymphocytes (out of white blood cells).
+
+The p-values of the variables in the final model could give us the informations about significance.
+The p-value of POP_furan3 was 7.61e-05, which was smaller than 0.05.
+So POP_furan3 was statistically significant.
+The p-value of lymphocyte_pct was 0.13071.
+This is greater than 0.05
+So lymphocyte_pct was not statistically significant.
+The p-value of male1 was 0.00598, which was less than 0.05.
+So male1 was significant.
+The p-value of ageyrs was "< 2e-16", which was less than 0.05.
+So ageyrs was statistically significant.
+Finally, the variable of ln_lbxcot has the p-value of 0.03974 < 0.05, which is also a significant variable.
+
+Then for the analysis of the final model, there should be more explanations about the covariates that were left 
+in the final model5. From the summary table of model 5, we could find that there are positive linear relationships
+between the variables POP_furan3 and ln_lbxcot with the telomere length.
+More specifically, if there is a unit change in POP_furan3,
+the change of the mean outcome will be 0.0062438;
+if ln_lbxcot has a unit change (ng/mL),
+the change of the mean outcome will be 0.0042712.
+Besides that, the other three variables male1, ageyrs and lymphocyte_pct
+are all have negative linear relationship with the telomere length.
+Similarly,
+if male1 has a unit change,
+the change of the mean outcome will be -0.0428367;
+if ageyrs has a unit change (years),
+the change of the mean outcome will be -0.0070265;
+if lymphocyte_pct has a unit change (percentage),
+the change of the mean outcome will be -0.0001737.
+
+Attach the summary of the final model: model 5 here, and present it in the form of coefficients table:
+```{r}
+summary(best_model)
+```
+
+Ultimately, there is an examine part of the data.
+There is a X-outliers that exists in the Histogram of Telomere Length, that is about 2.4 of index.
+That X-outliers could have some effections on the results of the final model. The X-outliers could 
+make the mean of the telomere length smaller than the true value. 
+Compare to the case that if there is no X-outliers, the X-outliers could make the estimates that have positive linear
+relationship smaller and could make the estimates that have negative linear relationship larger.
