@@ -1,0 +1,36 @@
+## Objective
+
+For the issues of relationship between pollutants with personl health, we have some questions to ask.
+
+* What is the mean of the differences of telomere length between the person currently smokes with the 
+  person currently not smokes?
+* Does female or male have higher percentage of elder cellular aging?
+* Which kind of pulltant has the most significant effect on the mean leukocyte telomere length, PCBs, dioxins or furans?
+* Is there a positive linear relationship or a negative linear relationship between BMI and the mean telomere length?
+
+The main purpose of our analysis is to find out how the persistant organic pollutants could affect the telomere length.
+Our dataset is based on a population of \(n = 864\) adults in a study invertigating.
+To be specific, we are going to explore the relationships between the personal basic conditions, the smoking 
+related conditions, the percent of cells index and four different pollutants with cellular aging,
+which might be related to certain cancers.
+The telomere length is exactly a marker of cellular aging.
+
+This report summarizes the statistical modeling and analysis result associated with the relationship 
+between exposure to persistant organic pollutants and telomere length.
+We divide the covariates into four groups and analyze how each group is related to the outcome, telomere length.
+More specifically, the goal of the analysis is to find out
+
+* among the 18 pollutants recorded, which 3 are most closely related to telomere length,
+* how are the concentrations of the 6 kinds of cells related to telomere length,
+* whether telomere length is related to smoking, and
+* which group of people, characterized by sex, age, BMI, race, and/or education, is most likely to have long telomere length.
+
+After the statement of the goal of report, the next procedure is to state the method that will be used in the analysis step.
+First for the given model, we use VIF to test and eliminate the multicollinearity. We use VIF > 10 as the standard and 
+remove all other explanatory variables, we take this step one by one until there is no more multicollinearity.
+Then for the model building part, we do automatic selection. Two different selection method was used in our analysis procedure.
+They are Forward Selection and Backward Elimination respectively. We use AIC and BIC in each method to get our model, and make
+comparison between each other. After all of these steps, we almost already have our most fitted model, but we need to check
+Model Predictive Accuracy. And that is exactly the reason of why we are seeking for the Mean Squared Prediction Error(MSPE) 
+as small as possible. Ultimately, the interests questions could have their answers. In the summary of our results, we could
+find the figures of corresponding covariates, and the plots could give us the answer of relationships.
