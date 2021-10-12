@@ -1,0 +1,19 @@
+## Discussion
+
+We used VIF to get a reduced model. Then, using forward with AIC and BIC, backward with
+AIC and BIC, and LASSO to get model 3 to model 7. After that we used prediction accuracy to
+find the best model and evaluated the parsimony and goodness of fit of the final model.
+From the rsiduals vs. fitted values plot we noticed that
+it showed approximately but not perfect equal variance.
+We also verified other model assumptions like linearity and normality.
+They all turned out to be approximately satisfied.
+We also found that there existed a strong
+relationship between pollutant PCBs. POP_PCB2 had the most significant effect on the mean
+leukocyte telomere length. There was a weak negative relationship between BMI and the mean
+telomere length.
+
+Ultimatley, we have some limitations of the analysis to share:
+1. We did not assess independence of the data and we think that the outcomes might be dependent.
+   For example, people living near to each other might have similar concentrations of the 18 pollutants.
+2. The dataset might be too small.
+3. We did not handle heteroskedasticity.
